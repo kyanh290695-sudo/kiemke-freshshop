@@ -184,3 +184,9 @@ button{cursor:pointer}
 .row{transition:opacity .35s ease, transform .35s ease}
 .row.leaving{opacity:0;transform:translateX(24px)}
 @media (prefers-reduced-motion:reduce){.row{transition:none}}
+
+.unit-row{display:flex;gap:8px;align-items:stretch}
+.unit-row .unit,.unit-row > .inp{flex:1;min-width:0}
+.plus{flex:none;width:52px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent-2);color:var(--accent);font-size:24px;font-weight:700;line-height:1}
+.plus:active{background:var(--accent);color:var(--on-accent)}
+.sum-line{font-size:14px;font-weight:700;color:var(--accent);min-height:1em;font-variant-numeric:tabular-nums}

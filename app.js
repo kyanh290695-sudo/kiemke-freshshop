@@ -3,7 +3,7 @@
           → Kiểm hàng tồn kho / Kiểm tài sản / Biên bản kiểm tra (PDF). */
 (function () {
   'use strict';
-  const APP_VERSION = '1.7.1';
+  const APP_VERSION = '1.8.0';
   const MASTER_URL = 'data/MASTERR.xlsx';
 
   const REASONS = {
@@ -44,6 +44,16 @@
   const r3 = n => Math.round(n * 1000) / 1000;
   const decStr = n => n == null ? '' : String(n).replace('.', ',');
   function num(v) { v = String(v).trim().replace(',', '.'); if (v === '') return null; const n = Number(v); return isFinite(n) && n >= 0 ? n : NaN; }
+  // Cộng dồn khi đếm: "5+4+3" hoặc "5 4 3" → 12 (dấu phẩy là phần thập phân)
+  function sumExpr(v) {
+    const parts = String(v == null ? '' : v).trim().split(/[+\s]+/).filter(Boolean);
+    if (!parts.length) return null;
+    let t = 0;
+    for (const p of parts) { const n = Number(p.replace(',', '.')); if (!isFinite(n) || n < 0) return NaN; t += n; }
+    return r3(t);
+  }
+  const isExpr = v => String(v || '').trim().replace(/\+$/, '').split(/[+\s]+/).filter(Boolean).length > 1;
+  const sumLine = (v, unit) => isExpr(v) ? '= ' + fmt(sumExpr(v)) + ' ' + esc(unit) : '';
   const intOf = v => { const d = String(v || '').replace(/\D/g, ''); return d ? Number(d) : null; };
   const hasCF = it => it.cf != null && it.cf !== 1;
 
@@ -226,11 +236,15 @@
 
   function panelHTML(it, i) {
     const rs = REASONS[ui.mode].map(r => '<button class="rc" data-reason="' + esc(r) + '" aria-pressed="' + (it.reason === r) + '">' + esc(r) + '</button>').join('');
-    const field = (attr, id, label, val, unit, hint) => '<div class="field"><label for="' + id + '">' + label + '</label><div class="unit"><input class="inp" id="' + id + '" ' + attr +
-      ' inputmode="decimal" enterkeyhint="' + hint + '" autocomplete="off" value="' + decStr(val) + '"><span>' + esc(unit) + '</span></div></div>';
+    const field = (attr, id, label, val, unit, hint, expr) => '<div class="field"><label for="' + id + '">' + label + '</label>' +
+      '<div class="unit-row"><div class="unit"><input class="inp" id="' + id + '" ' + attr + ' data-unit="' + esc(unit) + '"' +
+      ' inputmode="decimal" enterkeyhint="' + hint + '" autocomplete="off" value="' + esc(expr || decStr(val)) + '"><span>' + esc(unit) + '</span></div>' +
+      '<button type="button" class="plus" data-plus aria-label="Cộng thêm">+</button></div>' +
+      '<span class="sum-line" data-sumline>' + sumLine(expr, unit) + '</span></div>';
     let inputs;
-    if (ui.mode === 'asset') inputs = '<div class="pair one">' + field('data-act', 'act-' + i, 'Số lượng thực tế', it.actual, it.unit, 'done') + '</div>';
-    else if (byQty(sess())) inputs = '<div class="pair one">' + field('data-act', 'act-' + i, 'Số lượng thực tế', it.actual, it.dvt || 'ĐV', 'done') + '</div>';
+    if (ui.mode === 'asset') inputs = '<div class="pair one">' + field('data-act', 'act-' + i, 'Số lượng thực tế', it.actual, it.unit, 'done', it.expr) + '</div>';
+    else if (byQty(sess())) inputs = '<div class="pair one">' + field('data-act', 'act-' + i, 'Số lượng thực tế', it.actual, it.dvt || 'ĐV', 'done', it.expr) + '</div>' +
+      '<span class="hint" style="margin-top:-6px">Đếm nhiều chỗ thì bấm <b>+</b> giữa các số, ví dụ 5 + 4 + 3, app tự cộng.</span>';
     else inputs = '<div class="pair' + (hasCF(it) ? '' : ' one') + '">' +
       (hasCF(it) ? field('data-aq', 'aq-' + i, 'Số lượng đếm', it.actQty, it.dvt || 'ĐV', 'next') : '') +
       field('data-act', 'act-' + i, 'Trọng lượng thực tế', it.actual, it.u2 || 'Kg', 'done') + '</div>' +
@@ -244,7 +258,7 @@
   function rowHTML(it, i) {
     const s = st(it), ed = ui.edit === i, okL = MODES[ui.mode].okLabel;
     let recap = '';
-    if (!ed && it.res === 'bad') recap = '<div class="recap">' + (it.actual != null ? '<span>Thực tế <b>' + fmt(it.actual) + ' ' + esc(un(it)) + '</b></span>' : '') +
+    if (!ed && it.res === 'bad') recap = '<div class="recap">' + (it.actual != null ? '<span>Thực tế <b>' + fmt(it.actual) + ' ' + esc(un(it)) + '</b>' + (it.expr ? ' <span class="why">(' + esc(it.expr.replace(/\s+/g, '').replace(/\+$/, '').split('+').join(' + ')) + ')</span>' : '') + '</span>' : '') +
       (it.reason ? '<span class="why">' + esc(it.reason) + '</span>' : '<span class="why" style="color:var(--warn)">Chưa chọn lý do</span>') +
       (it.note ? '<span class="why">· ' + esc(it.note) + '</span>' : '') + '<button class="link" data-editrow>Sửa</button></div>';
     if (!ed && it.res === 'ok') recap = '<div class="recap"><span class="why">' + okL + ' lúc ' + hm(it.ts) + '</span></div>';
@@ -680,12 +694,19 @@
         const i = idxOf(e.target); if (i == null) return; const it = s.items[i];
         if (e.target.closest('[data-ok]')) {
           if (it.res === 'ok') { it.res = null; it.ts = null; logIt('Bỏ ' + MODES[ui.mode].okLabel, it.code, ''); }
-          else { Object.assign(it, { res: 'ok', actual: null, actQty: null, ts: Date.now() }); logIt(MODES[ui.mode].okLabel, it.code, ''); }
+          else { Object.assign(it, { res: 'ok', actual: null, actQty: null, expr: null, exprQ: null, ts: Date.now() }); logIt(MODES[ui.mode].okLabel, it.code, ''); }
           save(); if (ui.edit === i) ui.edit = null; redrawRow(i);
           if (it.res === 'ok') {
             if (ui.filter === 'todo') hideIfChecked(i);
             else { const n = nextTodo(i); if (n != null) { const r = rowEl(n); r && r.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }
           }
+          return;
+        }
+        const pb = e.target.closest('[data-plus]');
+        if (pb) {
+          const inp = pb.parentNode.querySelector('input'), v = inp.value.trim().replace(/\++$/, '');
+          if (v) inp.value = v + '+';
+          inp.focus(); const L = inp.value.length; try { inp.setSelectionRange(L, L); } catch (err) {}
           return;
         }
         if (e.target.closest('[data-bad]')) { if (it.res !== 'bad') { it.res = 'bad'; it.ts = Date.now(); save(); } ui.edit === i ? closeEdit() : openEdit(i); return; }
@@ -699,15 +720,18 @@
         }
         if (e.target.closest('[data-done]')) finishEdit(i);
       });
+      list.addEventListener('pointerdown', e => { if (e.target.closest('[data-plus]')) e.preventDefault(); });
       list.addEventListener('input', e => {
         const i = idxOf(e.target); if (i == null) return; const it = s.items[i];
         if (e.target.matches('[data-note]')) { it.note = e.target.value; save(); return; }
+        const sl = e.target.closest('.field') && e.target.closest('.field').querySelector('[data-sumline]');
+        if (sl && (e.target.matches('[data-act]') || e.target.matches('[data-aq]'))) sl.innerHTML = sumLine(e.target.value, e.target.dataset.unit || '');
         if (e.target.matches('[data-aq]')) {
-          const n = num(e.target.value); if (Number.isNaN(n)) return; it.actQty = n;
+          const n = sumExpr(e.target.value); if (Number.isNaN(n)) return; it.actQty = n; it.exprQ = isExpr(e.target.value) ? e.target.value : null;
           it.actual = n == null ? null : r3(n * it.cf); rowEl(i).querySelector('[data-act]').value = decStr(it.actual);
         }
         if (e.target.matches('[data-act]')) {
-          const n = num(e.target.value); if (Number.isNaN(n)) return; it.actual = n;
+          const n = sumExpr(e.target.value); if (Number.isNaN(n)) return; it.actual = n; it.expr = isExpr(e.target.value) ? e.target.value : null;
           const qi = rowEl(i).querySelector('[data-aq]'); if (qi && n != null && it.actQty != null && r3(it.actQty * it.cf) !== n) { it.actQty = null; qi.value = ''; }
         }
         save(); softRefresh(i);
@@ -722,14 +746,18 @@
         sheetOpen('<h3>Thêm mã ngoài danh sách</h3><p class="hint" style="margin:0">Mã này không có trong sổ sách nên sẽ tính là Thừa.</p>' +
           '<div class="field"><label for="a-code">Mã *</label><input class="inp mono" id="a-code" autocapitalize="characters" autocomplete="off"></div>' +
           '<div class="field"><label for="a-name">Tên *</label><input class="inp" id="a-name" autocomplete="off"></div>' +
-          '<div class="field"><label for="a-qty">' + unitLabel + ' *</label><input class="inp" id="a-qty" inputmode="decimal" autocomplete="off"></div>' +
+          '<div class="field"><label for="a-qty">' + unitLabel + ' *</label><div class="unit-row"><input class="inp" id="a-qty" inputmode="decimal" autocomplete="off"><button type="button" class="plus" id="a-plus" aria-label="Cộng thêm">+</button></div><span class="sum-line" id="a-sum"></span></div>' +
           '<div class="field"><label for="a-note">Ghi chú</label><input class="inp" id="a-note" placeholder="Ví dụ: hàng chưa có mã trên hệ thống" autocomplete="off"></div>' +
           '<p class="hint" id="a-err" style="margin:0;color:var(--short)"></p><div class="btns"><button class="btn" data-close>Huỷ</button><button class="btn pri" id="a-ok">Thêm</button></div>',
           sc => {
             const codeIn = sc.querySelector('#a-code'), nameIn = sc.querySelector('#a-name');
+            const aq = sc.querySelector('#a-qty');
+            aq.oninput = () => { sc.querySelector('#a-sum').innerHTML = sumLine(aq.value, ''); };
+            sc.querySelector('#a-plus').onpointerdown = e => e.preventDefault();
+            sc.querySelector('#a-plus').onclick = () => { const v = aq.value.trim().replace(/\++$/, ''); if (v) aq.value = v + '+'; aq.focus(); };
             codeIn.oninput = () => { const map = dvtMap(), p = map && map[codeIn.value.trim().toUpperCase()]; if (p && p.name && !nameIn.value) nameIn.value = p.name; };
             sc.querySelector('#a-ok').onclick = () => {
-              const code = codeIn.value.trim().toUpperCase(), name = nameIn.value.trim(), qv = num(sc.querySelector('#a-qty').value);
+              const code = codeIn.value.trim().toUpperCase(), name = nameIn.value.trim(), qv = sumExpr(sc.querySelector('#a-qty').value);
               const err = sc.querySelector('#a-err');
               if (!code || !name || qv == null || Number.isNaN(qv)) { err.textContent = 'Nhập đủ mã, tên và số thực tế.'; return; }
               if (s.items.some(i => i.code === code)) { err.textContent = 'Mã ' + code + ' đã có trong danh sách. Tìm và kiểm trực tiếp ở dòng đó.'; return; }
