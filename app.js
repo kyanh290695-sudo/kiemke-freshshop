@@ -3,7 +3,7 @@
           → Kiểm hàng tồn kho / Kiểm tài sản / Biên bản kiểm tra (PDF). */
 (function () {
   'use strict';
-  const APP_VERSION = '1.8.0';
+  const APP_VERSION = '1.9.0';
   const MASTER_URL = 'data/MASTERR.xlsx';
 
   const REASONS = {
@@ -436,7 +436,10 @@
       sig('sigManager', 'Quản lý cửa hàng ký *', R.manager) + sig('sigChecker', 'Người kiểm (Kế toán) ký *', ctx.checker) +
       (missing.length ? '<p class="hint" style="margin:0;color:var(--warn)">Cần ' + missing.join(', ') + '.</p>' : '') +
       '<button class="btn pri block" id="confirm"' + (missing.length ? ' disabled' : '') + '>' + (R.confirmedAt ? 'Tạo lại PDF' : 'Xác nhận & tạo PDF') + '</button>' +
-      (R.confirmedAt ? '<p class="hint" style="margin:0">Đã xác nhận lúc ' + dt(R.confirmedAt) + '.</p><div class="btns"><button class="btn" id="pdfSave">Tải PDF</button><button class="btn pri" id="pdfShare">Gửi biên bản</button></div>' : '') +
+      (R.confirmedAt ? '<p class="hint" style="margin:0">Đã xác nhận lúc ' + dt(R.confirmedAt) + '. Mỗi lần tạo ra 2 file:</p>' +
+        '<div class="pdf-list"><div><b>Báo cáo kiểm kê</b><span class="hint">Bìa, nội dung chính, biên bản, hình ảnh · khổ ngang</span><button class="link" data-pdf="0">Tải</button></div>' +
+        '<div><b>Biên bản gửi Giám đốc chi nhánh</b><span class="hint">Kiểm tra cửa hàng (A4 dọc) · Tài sản cố định (A4 dọc) · Hàng tồn kho (A4 ngang)</span><button class="link" data-pdf="1">Tải</button></div></div>' +
+        '<div class="btns"><button class="btn" id="pdfSave">Tải cả 2 PDF</button><button class="btn pri" id="pdfShare">Gửi cả 2 PDF</button></div>' : '') +
       '</div>';
   }
 
@@ -492,12 +495,22 @@
   }
 
   let pdfCache = null;
+  // Tạo 2 file: báo cáo kiểm kê (theme) + biên bản gửi Giám đốc chi nhánh (A4)
   async function makePdf() {
     const ctx = reportCtx(); ctx.report = report;
-    const blob = await KKReport.build(ctx);
+    const [b1, b2] = await Promise.all([KKReport.build(ctx), KKReport.buildForms(ctx)]);
     const d = new Date(), stamp = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
-    pdfCache = new File([blob], 'BienBanKiemKe_' + ctx.store.op + '_' + stamp + '.pdf', { type: 'application/pdf' });
+    pdfCache = [
+      new File([b1], 'BaoCaoKiemKe_' + ctx.store.op + '_' + stamp + '.pdf', { type: 'application/pdf' }),
+      new File([b2], 'BienBan_GDCN_' + ctx.store.op + '_' + stamp + '.pdf', { type: 'application/pdf' })
+    ];
     return pdfCache;
+  }
+  async function shareFiles(files, text) {
+    if (navigator.canShare && navigator.canShare({ files })) {
+      try { await navigator.share({ files, title: files.map(f => f.name).join(', '), text }); }
+      catch (e) { if (e.name !== 'AbortError') { files.forEach(download); toast('Không mở được bảng chia sẻ. Đã tải file về máy.'); } }
+    } else { files.forEach((f, i) => setTimeout(() => download(f), i * 700)); toast('Máy này không hỗ trợ chia sẻ file. Đã tải file về máy.'); }
   }
   async function shareFile(f, text) {
     if (navigator.canShare && navigator.canShare({ files: [f] })) {
@@ -840,12 +853,13 @@
       const cf = document.getElementById('confirm');
       cf.onclick = async () => {
         cf.disabled = true; cf.textContent = 'Đang tạo PDF…';
-        try { const f = await makePdf(); R.confirmedAt = Date.now(); saveReport(); rerender(); toast('Đã tạo ' + f.name + '.'); }
+        try { await makePdf(); R.confirmedAt = Date.now(); saveReport(); rerender(); toast('Đã tạo 2 file PDF: báo cáo kiểm kê và biên bản gửi Giám đốc chi nhánh.'); }
         catch (e) { toast('Không tạo được PDF: ' + e.message); rerender(); }
       };
       const get = async () => pdfCache || makePdf();
-      const ps = document.getElementById('pdfSave'); if (ps) ps.onclick = async () => { try { download(await get()); } catch (e) { toast('Không tạo được PDF: ' + e.message); } };
-      const sh = document.getElementById('pdfShare'); if (sh) sh.onclick = async () => { try { await shareFile(await get()); } catch (e) { toast('Không tạo được PDF: ' + e.message); } };
+      const ps = document.getElementById('pdfSave'); if (ps) ps.onclick = async () => { try { (await get()).forEach((f, i) => setTimeout(() => download(f), i * 700)); } catch (e) { toast('Không tạo được PDF: ' + e.message); } };
+      const sh = document.getElementById('pdfShare'); if (sh) sh.onclick = async () => { try { await shareFiles(await get()); } catch (e) { toast('Không tạo được PDF: ' + e.message); } };
+      app.querySelectorAll('[data-pdf]').forEach(b => b.onclick = async () => { try { download((await get())[Number(b.dataset.pdf)]); } catch (e) { toast('Không tạo được PDF: ' + e.message); } });
     }
   };
 

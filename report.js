@@ -85,6 +85,7 @@
     doc.addImage(data, fmt, x + (bw - w) / 2, y + oy, w, h);
     return { x: x + (bw - w) / 2, y: y + oy, w, h };
   }
+  const pw = doc => doc.internal.pageSize.getWidth();
   function coralBar(doc, x, y, w, h) { doc.setFillColor(...CORAL); doc.rect(x, y, w, h, 'F'); }
 
   /* ---------- chữ nhiều kiểu (đậm / thường / tô vàng), tự xuống dòng ---------- */
@@ -179,8 +180,8 @@
   }
 
   /* ---------- biên bản kiểm tra cửa hàng (gốc rộng 840) ---------- */
-  function storeForm(doc, R, ctx, x0, y0, w) {
-    const k = w / 840, rep = ctx.report;
+  function storeForm(doc, R, ctx, x0, y0, w, pad) {
+    const k = w / 840, rep = ctx.report, cp = (pad || 4) * k;
     let y = y0;
     doc.setDrawColor(0); doc.setLineWidth(1.2 * k);
     const headH = 74 * k;
@@ -206,8 +207,8 @@
     doc.setTextColor(0, 0, 0);
     y += 28 * k;
     doc.autoTable({
-      startY: y, margin: { left: x0, right: W - x0 - w }, tableWidth: w, theme: 'grid',
-      styles: { font: 'Tinos', fontSize: 10.5 * k, textColor: 0, lineColor: 0, lineWidth: 0.6 * k, cellPadding: 4 * k, valign: 'middle' },
+      startY: y, margin: { left: x0, right: pw(doc) - x0 - w }, tableWidth: w, theme: 'grid',
+      styles: { font: 'Tinos', fontSize: 10.5 * k, textColor: 0, lineColor: 0, lineWidth: 0.6 * k, cellPadding: cp, valign: 'middle' },
       headStyles: { fillColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
       head: [[{ content: 'STT', rowSpan: 2 }, { content: 'CHỈ TIÊU KIỂM TRA', rowSpan: 2 }, { content: 'ĐÁNH GIÁ', colSpan: 2 }, { content: 'GHI CHÚ', rowSpan: 2 }], ['Đạt', 'Không đạt']],
       body: CHECKLIST.map(([label], i) => [String(i + 1), T(label), '', '', T((rep.checklist[i] || {}).note || '')]),
@@ -221,7 +222,7 @@
     y = doc.lastAutoTable.finalY;
     doc.setFont('Tinos', 'normal'); doc.setFontSize(10.5 * k);
     const other = doc.splitTextToSize(T(rep.other || ''), w - 16 * k);
-    const lines = Math.max(3, other.length), boxH = (22 + lines * 15) * k;
+    const lines = Math.max(pad ? 5 : 3, other.length), boxH = (22 + lines * 15) * k;
     doc.setLineWidth(1.2 * k); doc.rect(x0, y, w, boxH);
     doc.setFont('Tinos', 'bold'); doc.text('CÁC VẤN ĐỀ KHÁC', x0 + 4 * k, y + 14 * k);
     doc.setLineWidth(0.6 * k); doc.line(x0 + 4 * k, y + 16 * k, x0 + 4 * k + doc.getTextWidth('CÁC VẤN ĐỀ KHÁC'), y + 16 * k);
@@ -248,9 +249,14 @@
 
   /* ---------- biên bản kiểm kê hàng tồn kho (gốc rộng 1220) ---------- */
   function stockPages(doc, R, ctx, s, heading) {
-    const left = 36, right = W - 36, k = (right - left) / 1220, top = 200;
     newPage(doc, R, heading);
-    const y = docHeader(doc, ctx, 'BIÊN BẢN KIỂM KÊ HÀNG TỒN KHO', 194, left, right, s, k);
+    stockTable(doc, ctx, s, { left: 36, right: W - 36, top: 194, contTop: 200, bottom: 580, sigLimit: 604,
+      onPage: () => { brand(doc, R); title(doc, heading); }, newPage: () => { newPage(doc, R, heading); return 210; } });
+  }
+  // o = { left, right, top, contTop, bottom, sigLimit, kf (cỡ chữ), onPage (trang nối tiếp), newPage () → y }
+  function stockTable(doc, ctx, s, o) {
+    const left = o.left, right = o.right, k = (right - left) / 1220, kf = o.kf || k;
+    const y = docHeader(doc, ctx, 'BIÊN BẢN KIỂM KÊ HÀNG TỒN KHO', o.top, left, right, s, kf);
     const byQ = s.by === 'qty';
     const body = s.items.map((it, i) => {
       const mv = it.mv || {}, cfOk = it.cf && it.cf !== 1;
@@ -267,9 +273,9 @@
     [4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 16].forEach(i => { cs[i].halign = 'right'; });
     cs[0].halign = 'center'; cs[17] = {};
     doc.autoTable({
-      startY: y, margin: { left, right: W - right, top: 200, bottom: H - 580 }, theme: 'grid',
-      styles: { font: 'Tinos', fontSize: 7.8 * k, textColor: 0, lineColor: 0, lineWidth: 0.4 * k, cellPadding: { top: 1.6 * k, bottom: 1.6 * k, left: 2 * k, right: 2 * k }, valign: 'middle', overflow: 'linebreak' },
-      headStyles: { fillColor: CYAN, fontStyle: 'bold', halign: 'center', fontSize: 6.8 * k },
+      startY: y, margin: { left, right: pw(doc) - right, top: o.contTop, bottom: doc.internal.pageSize.getHeight() - o.bottom }, theme: 'grid',
+      styles: { font: 'Tinos', fontSize: 7.8 * kf, textColor: 0, lineColor: 0, lineWidth: 0.4 * k, cellPadding: { top: 1.6 * kf, bottom: 1.6 * kf, left: 2 * k, right: 2 * k }, valign: 'middle', overflow: 'linebreak' },
+      headStyles: { fillColor: CYAN, fontStyle: 'bold', halign: 'center', fontSize: 6.8 * kf },
       head: [
         [{ content: 'STT', rowSpan: 3 }, { content: 'MÃ SẢN PHẨM', rowSpan: 3 }, { content: 'TÊN SẢN PHẨM', rowSpan: 3 }, { content: 'DVT', rowSpan: 3 }, { content: 'THEO SỔ SÁCH', colSpan: 9 },
           { content: 'TỒN\nTHEO SỔ\nSÁCH', rowSpan: 3 }, { content: 'KIỂM KÊ\nTHỰC TẾ', rowSpan: 3 }, { content: 'SỐ LƯỢNG\nBÁN/NHẬP', rowSpan: 3 }, { content: 'CHÊNH\nLỆCH\n(TT/SS)', rowSpan: 3 }, { content: 'Ghi Chú', rowSpan: 3 }],
@@ -283,19 +289,20 @@
         if (d.column.index === 16 && d.cell.raw && d.cell.raw !== '-') d.cell.styles.textColor = String(d.cell.raw).startsWith('-') ? [194, 58, 43] : [37, 96, 168];
         if (it && it.res == null && d.column.index === 17) d.cell.styles.textColor = [140, 140, 140];
       },
-      willDrawPage: d => { if (d.pageNumber > 1) { brand(doc, R); title(doc, heading); } }
+      willDrawPage: d => { if (d.pageNumber > 1 && o.onPage) o.onPage(); }
     });
     let fy = doc.lastAutoTable.finalY + 14;
-    if (fy + 100 * k + 10 > 604) { newPage(doc, R, heading); fy = 210; }
-    fy = signBlock(doc, ctx, left, fy, right - left, k, true);
-    doc.setFont('Tinos', 'normal'); doc.setFontSize(8.5 * k);
-    doc.text('Ghi chú: In báo cáo stock và báo cáo "Sale Report(List by Product)" trên máy Pos đính kèm biên bản kiểm tra', left + 20 * k, fy + 10 * k);
+    if (fy + 100 * kf + 10 > o.sigLimit) fy = o.newPage();
+    fy = signBlock(doc, ctx, left, fy, right - left, kf, true);
+    doc.setFont('Tinos', 'normal'); doc.setFontSize(8.5 * kf);
+    doc.text('Ghi chú: In báo cáo stock và báo cáo "Sale Report(List by Product)" trên máy Pos đính kèm biên bản kiểm tra', left + 20 * k, fy + 10 * kf);
   }
 
   /* ---------- biên bản tài sản cố định (gốc rộng 924) ---------- */
-  function assetForm(doc, R, ctx, s, left, right, top, heading) {
-    const k = (right - left) / 924;
-    const y = docHeader(doc, ctx, 'BIÊN BẢN KIỂM KÊ TÀI SẢN CỐ ĐỊNH', top, left, right, s, k);
+  // o = { left, right, top, contTop, bottom, sigLimit, kf, onPage, newPage () → y }
+  function assetForm(doc, ctx, s, o) {
+    const left = o.left, right = o.right, k = (right - left) / 924, kf = o.kf || k;
+    const y = docHeader(doc, ctx, 'BIÊN BẢN KIỂM KÊ TÀI SẢN CỐ ĐỊNH', o.top, left, right, s, kf);
     let sb = 0, sa = 0, sr = 0, sd = 0;
     const body = s.items.map((it, i) => {
       const actual = it.res === 'ok' ? it.book : (it.res === 'bad' ? it.actual : null);
@@ -308,20 +315,20 @@
     const al = ['center', 'left', 'right', 'left', 'center', 'right', 'right', 'right', 'center'];
     const cs = {}; cw.forEach((v, i) => { cs[i] = { cellWidth: v * k, halign: al[i] }; }); cs[9] = {};
     doc.autoTable({
-      startY: y, margin: { left, right: W - right, top: 200, bottom: H - 580 }, theme: 'grid',
-      styles: { font: 'Tinos', fontSize: 9 * k, textColor: 0, lineColor: 0, lineWidth: 0.5 * k, cellPadding: { top: 1.8 * k, bottom: 1.8 * k, left: 3 * k, right: 3 * k }, valign: 'middle' },
-      headStyles: { fillColor: [255, 255, 255], fontStyle: 'bold', halign: 'center', fontSize: 9 * k },
+      startY: y, margin: { left, right: pw(doc) - right, top: o.contTop, bottom: doc.internal.pageSize.getHeight() - o.bottom }, theme: 'grid',
+      styles: { font: 'Tinos', fontSize: 9 * kf, textColor: 0, lineColor: 0, lineWidth: 0.5 * k, cellPadding: { top: 1.8 * kf, bottom: 1.8 * kf, left: 3 * k, right: 3 * k }, valign: 'middle' },
+      headStyles: { fillColor: [255, 255, 255], fontStyle: 'bold', halign: 'center', fontSize: 9 * kf },
       footStyles: { fillColor: [255, 255, 255], fontStyle: 'bold', halign: 'right' },
       head: [[{ content: 'STT', rowSpan: 2 }, { content: 'Mã\nTài Sản', rowSpan: 2 }, { content: 'Ngày Nhận', rowSpan: 2 }, { content: 'Tên Tài Sản', rowSpan: 2 }, { content: 'Mã\nBộ phận', rowSpan: 2 },
         { content: 'Số Lượng', colSpan: 4 }, { content: 'Ghi Chú', rowSpan: 2 }], ['Theo sổ sách', 'Nguyên Giá', 'Thực tế', 'Chênh Lệch\nTT/SC']],
       body,
       foot: [[{ content: 'TỔNG', colSpan: 5, styles: { halign: 'center' } }, sb, money(sa), sr, sd || '-', '']],
       showFoot: 'lastPage', columnStyles: cs,
-      willDrawPage: d => { if (d.pageNumber > 1) { brand(doc, R); title(doc, heading); } }
+      willDrawPage: d => { if (d.pageNumber > 1 && o.onPage) o.onPage(); }
     });
     let fy = doc.lastAutoTable.finalY + 14;
-    if (fy + 92 * k > 604) { newPage(doc, R, heading); fy = 210; }
-    signBlock(doc, ctx, left, fy, right - left, k, true);
+    if (fy + 92 * kf > o.sigLimit) fy = o.newPage();
+    signBlock(doc, ctx, left, fy, right - left, kf, true);
   }
 
   /* ---------- các trang ---------- */
@@ -375,7 +382,8 @@
   // Trang tài sản: chỉ có biên bản, không ghi chú
   function assetPages(doc, R, ctx, s, heading) {
     newPage(doc, R, heading);
-    assetForm(doc, R, ctx, s, 96, W - 96, 194, heading);
+    assetForm(doc, ctx, s, { left: 96, right: W - 96, top: 194, contTop: 200, bottom: 580, sigLimit: 604,
+      onPage: () => { brand(doc, R); title(doc, heading); }, newPage: () => { newPage(doc, R, heading); return 210; } });
   }
   // 3 ảnh một trang, chú thích (lý do) dưới mỗi ảnh; không đánh số ảnh
   function photoPages(doc, R, ctx, heading) {
@@ -431,5 +439,34 @@
     return doc.output('blob');
   }
 
-  root.KKReport = { build, CHECKLIST, preload: () => resources().catch(() => {}) };
+  /* Biên bản gửi Giám đốc chi nhánh: 3 biên bản đúng khổ giấy in
+     · Kiểm tra cửa hàng (A4 dọc) · Tài sản cố định (A4 dọc) · Hàng tồn kho (A4 ngang) */
+  async function buildForms(ctx) {
+    const R = await resources();
+    const doc = new root.jspdf.jsPDF({ orientation: 'p', unit: 'pt', format: 'a4', compress: true });
+    FONTS.forEach(([f, fam, style], i) => { doc.addFileToVFS(f, R.fonts[i]); doc.addFont(f, fam, style); });
+    doc.setProperties({ title: 'Biên bản kiểm kê ' + ctx.store.op, author: ctx.checker, creator: 'Kiểm kê Freshshop' });
+    const M = 32;
+    // 1. Biên bản kiểm tra cửa hàng — A4 dọc (595 × 842)
+    storeForm(doc, R, ctx, M, 48, 595.28 - 2 * M, 9);
+    // 2. Tài sản cố định — A4 dọc; trang nối tiếp vẫn dọc
+    if (ctx.asset) {
+      doc.addPage('a4', 'p');
+      assetForm(doc, ctx, ctx.asset, { left: M, right: 595.28 - M, top: 44, contTop: 36, bottom: 812, sigLimit: 822, kf: 0.8,
+        newPage: () => { doc.addPage('a4', 'p'); return 60; } });
+    }
+    // 3. Hàng tồn kho — A4 ngang; ép các trang nối tiếp của bảng cũng ngang
+    if (ctx.stock) {
+      doc.addPage('a4', 'l');
+      const orig = doc.addPage;
+      doc.addPage = function (f, o) { return orig.call(this, f || 'a4', o || 'l'); };
+      try {
+        stockTable(doc, ctx, ctx.stock, { left: 24, right: 841.89 - 24, top: 36, contTop: 30, bottom: 568, sigLimit: 584, kf: 0.8,
+          newPage: () => { doc.addPage('a4', 'l'); return 60; } });
+      } finally { doc.addPage = orig; }
+    }
+    return doc.output('blob');
+  }
+
+  root.KKReport = { build, buildForms, CHECKLIST, preload: () => resources().catch(() => {}) };
 })(self);

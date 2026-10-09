@@ -190,3 +190,9 @@ button{cursor:pointer}
 .plus{flex:none;width:52px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent-2);color:var(--accent);font-size:24px;font-weight:700;line-height:1}
 .plus:active{background:var(--accent);color:var(--on-accent)}
 .sum-line{font-size:14px;font-weight:700;color:var(--accent);min-height:1em;font-variant-numeric:tabular-nums}
+
+.pdf-list{display:grid;border:1px solid var(--line);border-radius:12px}
+.pdf-list > div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.pdf-list > div:last-child{border-bottom:0}
+.pdf-list .hint{grid-column:1}
+.pdf-list .link{grid-column:2;grid-row:1 / span 2;align-self:center}
