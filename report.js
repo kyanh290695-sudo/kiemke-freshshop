@@ -221,19 +221,29 @@
     });
     y = doc.lastAutoTable.finalY;
     doc.setFont('Tinos', 'normal'); doc.setFontSize(10.5 * k);
-    const other = doc.splitTextToSize(T(rep.other || ''), w - 16 * k);
+    const other = boldLines(doc, rep.other, w - 16 * k, 10.5 * k);
     const lines = Math.max(pad ? 5 : 3, other.length), boxH = (22 + lines * 15) * k;
     doc.setLineWidth(1.2 * k); doc.rect(x0, y, w, boxH);
     doc.setFont('Tinos', 'bold'); doc.text('CÁC VẤN ĐỀ KHÁC', x0 + 4 * k, y + 14 * k);
     doc.setLineWidth(0.6 * k); doc.line(x0 + 4 * k, y + 16 * k, x0 + 4 * k + doc.getTextWidth('CÁC VẤN ĐỀ KHÁC'), y + 16 * k);
     doc.setFont('Tinos', 'normal');
-    for (let i = 0; i < lines; i++) { const ly = y + (22 + (i + 1) * 15) * k; doc.setDrawColor(150); doc.line(x0, ly, x0 + w, ly); doc.setDrawColor(0); if (other[i]) doc.text(other[i], x0 + 8 * k, ly - 4 * k); }
+    for (let i = 0; i < lines; i++) { const ly = y + (22 + (i + 1) * 15) * k; doc.setDrawColor(150); doc.line(x0, ly, x0 + w, ly); doc.setDrawColor(0); if (other[i] && other[i].length) drawRich(doc, [other[i]], x0 + 8 * k, ly - 4 * k, 10.5 * k, 0); }
     y += boxH + 10 * k;
     doc.setLineWidth(1.2 * k); doc.rect(x0, y, w, 128 * k);
     signBlock(doc, ctx, x0, y + 18 * k, w, k, false);
     return y + 128 * k;
   }
   // Chiều cao biên bản cửa hàng ở k = 1 (để căn giữa trong khung)
+  // "*Tủ đông số 2*: kêu to" → phần trong dấu * in đậm; xuống dòng giữ nguyên. Dấu * lẻ thì in nguyên văn.
+  function boldRuns(p) {
+    return p.split(/(\*[^*\n]+\*)/).filter(Boolean).map(t => /^\*[^*\n]+\*$/.test(t) ? { text: t.slice(1, -1), bold: true } : { text: t });
+  }
+  function boldLines(doc, text, width, fs) {
+    const out = [];
+    T(text || '').split(/\r?\n/).forEach(p => { if (p.trim()) richLines(doc, boldRuns(p), width, fs).forEach(l => out.push(l)); else if (out.length) out.push([]); });
+    while (out.length && !out[out.length - 1].length) out.pop();
+    return out;
+  }
   const STORE_FORM_H = rep => 74 + 28 + 36 + 10 * 26 + 22 + Math.max(3, Math.ceil(((rep.other || '').length || 1) / 120)) * 15 + 10 + 128;
 
   /* ---------- đầu biên bản kho / tài sản ---------- */
@@ -243,7 +253,7 @@
     doc.setFontSize(17 * k); doc.text(heading, (left + right) / 2, y + 36 * k, { align: 'center' });
     doc.setFont('Tinos', 'italic'); doc.setFontSize(9.5 * k); doc.text(ngay(ctx.date), right, y + 48 * k, { align: 'right' });
     doc.setFont('Tinos', 'normal');
-    doc.text('Thời gian bắt đầu: ' + hhmm(sess.startedAt) + '    Thời gian kết thúc: ' + hhmm(sess.endedAt), (left + right) / 2, y + 60 * k, { align: 'center' });
+    doc.text('Thời gian bắt đầu: ' + hhmm(ctx.start) + '    Thời gian kết thúc: ' + hhmm(ctx.end), (left + right) / 2, y + 60 * k, { align: 'center' });
     return y + 66 * k;
   }
 

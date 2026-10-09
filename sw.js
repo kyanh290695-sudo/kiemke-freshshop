@@ -1,5 +1,5 @@
 /* Service worker: cache toàn bộ app để chạy offline + nhận file chia sẻ (Android Web Share Target). */
-const VERSION = 'kk-v1.9.0';
+const VERSION = 'kk-v1.10.0';
 const MASTER_URL = './data/MASTERR.xlsx';
 const ASSETS = [
   './', './index.html', './styles.css', './app.js', './parsers.js', './db.js', MASTER_URL,

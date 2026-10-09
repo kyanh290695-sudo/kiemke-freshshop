@@ -3,7 +3,7 @@
           → Kiểm hàng tồn kho / Kiểm tài sản / Biên bản kiểm tra (PDF). */
 (function () {
   'use strict';
-  const APP_VERSION = '1.9.0';
+  const APP_VERSION = '1.10.0';
   const MASTER_URL = 'data/MASTERR.xlsx';
 
   const REASONS = {
@@ -424,7 +424,8 @@
       (R.photo ? '<img class="photo" src="' + R.photo + '" alt="Ảnh check-in"><button class="btn" id="takePhoto">Chụp lại</button>'
         : '<button class="btn pri" id="takePhoto">Chụp ảnh check-in</button>') +
       '<div class="eyebrow" style="margin-top:6px">2. Kiểm tra cửa hàng (' + answered + '/10)</div><div class="cl">' + cl + '</div>' +
-      '<div class="field"><label for="other">Các vấn đề khác</label><textarea class="inp" id="other" rows="3" placeholder="Ví dụ: Tủ đông số 2 kêu to, đã báo bảo trì">' + esc(R.other) + '</textarea></div>' +
+      '<div class="field"><label for="other">Các vấn đề khác</label><textarea class="inp" id="other" rows="3" placeholder="Ví dụ: *Tủ đông số 2*: kêu to, đã báo bảo trì">' + esc(R.other) + '</textarea>' +
+      '<span class="hint">Đặt chữ trong hai dấu * để in đậm, ví dụ *Tủ đông số 2*.</span><div class="bold-prev" id="otherPrev">' + boldPreview(R.other) + '</div></div>' +
       '<div class="eyebrow" style="margin-top:6px">3. Hình ảnh kiểm tra (' + R.photos.length + ' ảnh)</div>' +
       (R.photos.length ? '<div class="ev">' + R.photos.map((p, i) => '<div class="ev-card" data-pi="' + i + '"><img src="' + p.data + '" alt="Ảnh kiểm tra ' + (i + 1) + '">' +
         '<div class="ev-body"><div class="ev-top"><b>Ảnh ' + (i + 1) + '</b><span class="hint">' + hm(p.at) + '</span><button class="link" data-pdel>Xoá</button></div>' +
@@ -436,12 +437,14 @@
       sig('sigManager', 'Quản lý cửa hàng ký *', R.manager) + sig('sigChecker', 'Người kiểm (Kế toán) ký *', ctx.checker) +
       (missing.length ? '<p class="hint" style="margin:0;color:var(--warn)">Cần ' + missing.join(', ') + '.</p>' : '') +
       '<button class="btn pri block" id="confirm"' + (missing.length ? ' disabled' : '') + '>' + (R.confirmedAt ? 'Tạo lại PDF' : 'Xác nhận & tạo PDF') + '</button>' +
-      (R.confirmedAt ? '<p class="hint" style="margin:0">Đã xác nhận lúc ' + dt(R.confirmedAt) + '. Mỗi lần tạo ra 2 file:</p>' +
-        '<div class="pdf-list"><div><b>Báo cáo kiểm kê</b><span class="hint">Bìa, nội dung chính, biên bản, hình ảnh · khổ ngang</span><button class="link" data-pdf="0">Tải</button></div>' +
-        '<div><b>Biên bản gửi Giám đốc chi nhánh</b><span class="hint">Kiểm tra cửa hàng (A4 dọc) · Tài sản cố định (A4 dọc) · Hàng tồn kho (A4 ngang)</span><button class="link" data-pdf="1">Tải</button></div></div>' +
+      (R.confirmedAt ? '<p class="hint" style="margin:0">Đã xác nhận lúc ' + dt(R.confirmedAt) + '. Giờ kết thúc trên biên bản = lúc tạo PDF; tạo lại sẽ cập nhật giờ. Mỗi lần tạo ra 2 file:</p>' +
+        '<div class="pdf-list"><div><b>Biên Bản Kiểm Tra (Có đính kèm hình ảnh)</b><span class="hint">Bìa, nội dung chính, biên bản, hình ảnh · khổ ngang</span><button class="link" data-pdf="0">Tải</button></div>' +
+        '<div><b>Biên Bản Kiểm Tra</b><span class="hint">Kiểm tra cửa hàng (A4 dọc) · Tài sản cố định (A4 dọc) · Hàng tồn kho (A4 ngang)</span><button class="link" data-pdf="1">Tải</button></div></div>' +
         '<div class="btns"><button class="btn" id="pdfSave">Tải cả 2 PDF</button><button class="btn pri" id="pdfShare">Gửi cả 2 PDF</button></div>' : '') +
       '</div>';
   }
+
+  const boldPreview = t => /\*[^*\n]+\*/.test(t || '') ? esc(t).replace(/\*([^*\n]+)\*/g, '<b>$1</b>').replace(/\n/g, '<br>') : '';
 
   // Ảnh: thu nhỏ + in giờ, cửa hàng (và toạ độ nếu có) lên ảnh
   let lastPos = null;
@@ -498,11 +501,13 @@
   // Tạo 2 file: báo cáo kiểm kê (theme) + biên bản gửi Giám đốc chi nhánh (A4)
   async function makePdf() {
     const ctx = reportCtx(); ctx.report = report;
+    const now = Date.now();
+    ctx.start = (visit.checkin && visit.checkin.at) || visit.startedAt; ctx.end = now; ctx.date = now;
     const [b1, b2] = await Promise.all([KKReport.build(ctx), KKReport.buildForms(ctx)]);
     const d = new Date(), stamp = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
     pdfCache = [
-      new File([b1], 'BaoCaoKiemKe_' + ctx.store.op + '_' + stamp + '.pdf', { type: 'application/pdf' }),
-      new File([b2], 'BienBan_GDCN_' + ctx.store.op + '_' + stamp + '.pdf', { type: 'application/pdf' })
+      new File([b1], 'BienBanKiemTra_CoHinhAnh_' + ctx.store.op + '_' + stamp + '.pdf', { type: 'application/pdf' }),
+      new File([b2], 'BienBanKiemTra_' + ctx.store.op + '_' + stamp + '.pdf', { type: 'application/pdf' })
     ];
     return pdfCache;
   }
@@ -842,7 +847,7 @@
         cRow.querySelector('[data-dsum="' + d + '"]').textContent = v ? vnd.format(v * d) : '';
         updateCash();
       });
-      document.getElementById('other').oninput = e => { R.other = e.target.value; unconfirm(); saveReport(); };
+      document.getElementById('other').oninput = e => { R.other = e.target.value; document.getElementById('otherPrev').innerHTML = boldPreview(R.other); unconfirm(); saveReport(); };
       const mg = document.getElementById('manager');
       mg.oninput = () => { R.manager = mg.value; unconfirm(); saveReport(); };
       mg.onchange = rerender;
@@ -853,7 +858,7 @@
       const cf = document.getElementById('confirm');
       cf.onclick = async () => {
         cf.disabled = true; cf.textContent = 'Đang tạo PDF…';
-        try { await makePdf(); R.confirmedAt = Date.now(); saveReport(); rerender(); toast('Đã tạo 2 file PDF: báo cáo kiểm kê và biên bản gửi Giám đốc chi nhánh.'); }
+        try { await makePdf(); R.confirmedAt = Date.now(); saveReport(); rerender(); toast('Đã tạo 2 file PDF: Biên Bản Kiểm Tra (Có đính kèm hình ảnh) và Biên Bản Kiểm Tra.'); }
         catch (e) { toast('Không tạo được PDF: ' + e.message); rerender(); }
       };
       const get = async () => pdfCache || makePdf();
