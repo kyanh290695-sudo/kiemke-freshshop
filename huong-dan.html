@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hướng dẫn · Kiểm kê Freshshop</title>
+  <meta name="theme-color" content="#0F5A48">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .guide{max-width:560px;margin:0 auto;background:var(--surface);min-height:100vh;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(32px + env(safe-area-inset-bottom,0px))}
+    .g-top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+    .g-top img{width:44px;height:44px;border-radius:12px}
+    .g-top h1{font-size:21px;margin:0;line-height:1.2}
+    .g-top small{color:var(--muted);display:block;font-size:13px}
+    .g-back{display:inline-flex;align-items:center;gap:6px;margin:6px 0 14px;font-weight:600;color:var(--accent);text-decoration:none}
+    .toc{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 18px}
+    .toc a{font-size:13px;border:1px solid var(--line);border-radius:99px;padding:5px 11px;color:var(--ink);text-decoration:none;background:var(--sunk)}
+    section{border-top:1px solid var(--line);padding:18px 0 4px}
+    section h2{font-size:17px;margin:0 0 10px;display:flex;gap:10px;align-items:center}
+    section h2 .n{flex:none;width:28px;height:28px;border-radius:9px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:14px}
+    ol,ul{margin:0 0 10px;padding-left:20px;display:grid;gap:6px}
+    li{line-height:1.5}
+    .tip{background:var(--accent-2);border-radius:12px;padding:10px 12px;font-size:14px;margin:8px 0 12px}
+    .warn{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:14px;margin:8px 0 12px}
+    .k{display:inline-block;border:1px solid var(--line);border-bottom-width:2px;border-radius:7px;padding:0 7px;font-size:13px;font-weight:700;background:var(--sunk);white-space:nowrap}
+    .ok{color:var(--ok);font-weight:700} .bad{color:var(--short);font-weight:700}
+    table{border-collapse:collapse;width:100%;font-size:14px;margin:6px 0 12px}
+    th,td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left;vertical-align:top}
+    th{font-size:12.5px;color:var(--muted);font-weight:600}
+    code{font-family:var(--f-mono);font-size:.9em;background:var(--sunk);border-radius:5px;padding:1px 5px}
+    .g-foot{color:var(--muted);font-size:12.5px;text-align:center;margin-top:20px}
+  </style>
+</head>
+<body>
+<main class="guide">
+  <a class="g-back" href="./">‹ Về app</a>
+  <div class="g-top"><img src="icons/icon-192.png" alt=""><div><h1>Hướng dẫn sử dụng</h1><small>App Kiểm kê Freshshop · dành cho người mới</small></div></div>
+
+  <nav class="toc" aria-label="Mục lục">
+    <a href="#cai-dat">Cài app</a><a href="#file">Chuẩn bị file</a><a href="#bat-dau">Bắt đầu</a>
+    <a href="#ton-kho">Kiểm tồn kho</a><a href="#tai-san">Kiểm tài sản</a><a href="#bien-ban">Biên bản & PDF</a>
+    <a href="#ket-thuc">Kết thúc</a><a href="#loi">Lỗi thường gặp</a>
+  </nav>
+
+  <div class="tip"><b>Tóm tắt 1 chuyến kiểm:</b> chọn 3 file → chọn cửa hàng → chụp ảnh check-in → kiểm tồn kho → kiểm tài sản → làm biên bản, ký tên → tạo 2 file PDF → gửi qua Zalo / Teams.</div>
+
+  <section id="cai-dat">
+    <h2><span class="n">1</span>Cài app lên điện thoại</h2>
+    <p><b>iPhone</b> (dùng Safari):</p>
+    <ol>
+      <li>Mở link app bằng <b>Safari</b>.</li>
+      <li>Bấm nút <b>Chia sẻ</b> (ô vuông có mũi tên lên) → <b>Thêm vào MH chính</b> → <b>Thêm</b>.</li>
+    </ol>
+    <p><b>Android</b> (dùng Chrome):</p>
+    <ol>
+      <li>Mở link app bằng <b>Chrome</b>.</li>
+      <li>Bấm <b>⋮</b> → <b>Cài đặt ứng dụng</b> (hoặc <i>Thêm vào màn hình chính</i>).</li>
+    </ol>
+    <div class="tip">Lần đầu mở cần có mạng. Sau đó mất mạng vẫn dùng được, nhớ mở bằng biểu tượng <b>Kiểm kê</b> trên màn hình chính.</div>
+  </section>
+
+  <section id="file">
+    <h2><span class="n">2</span>Chuẩn bị file</h2>
+    <table>
+      <tr><th>File</th><th>Là gì</th></tr>
+      <tr><td><b>STOCK.csv</b></td><td>Tồn kho của cửa hàng (xuất từ hệ thống)</td></tr>
+      <tr><td><b>DVT.csv</b></td><td>Tồn theo đơn vị tính của <b>cùng cửa hàng, cùng ngày</b> với STOCK. Bắt buộc khi kiểm tồn kho</td></tr>
+      <tr><td><b>ASSET.xlsx</b></td><td>Tài sản của <b>tất cả cửa hàng</b>, app tự lọc theo cửa hàng</td></tr>
+    </table>
+    <p>Để các file trong OneDrive.</p>
+    <ul>
+      <li><b>iPhone:</b> trong app bấm <b>Chọn file</b> → <b>Duyệt</b> → <b>OneDrive</b>.</li>
+      <li><b>Android:</b> mở file trong app OneDrive → <b>Chia sẻ</b> → chọn <b>Kiểm kê</b>, app tự nạp vào đúng ô.</li>
+    </ul>
+  </section>
+
+  <section id="bat-dau">
+    <h2><span class="n">3</span>Bắt đầu chuyến kiểm</h2>
+    <ol>
+      <li><b>Dữ liệu kiểm:</b> bấm <span class="k">Chọn file</span> ở từng ô Tồn kho, ĐVT tồn kho, Tài sản.</li>
+      <li><b>Cửa hàng:</b> app tự chọn theo file. Nếu chưa có, gõ tên hoặc mã để tìm (vd. <code>long khanh</code>, <code>FS176</code>).</li>
+      <li><b>Người kiểm:</b> nhập họ tên.</li>
+      <li><b>Ảnh check-in:</b> chụp trước cửa hàng. App tự in giờ, tên cửa hàng, toạ độ lên ảnh.</li>
+      <li>Bấm <span class="k">Bắt đầu kiểm</span>.</li>
+    </ol>
+    <div class="warn">Nếu file STOCK, DVT và cửa hàng đang chọn không cùng mã cửa hàng (OPER), app báo đỏ và không cho bắt đầu. Kiểm tra lại đã chọn đúng file chưa.</div>
+  </section>
+
+  <section id="ton-kho">
+    <h2><span class="n">4</span>Kiểm hàng tồn kho</h2>
+    <p>Mỗi dòng hiện mã, tên và <b>sổ sách theo đơn vị tính</b>, ví dụ <i>Sổ sách 3 Bao · 1,5 Kg · 1 Bao = 0,5 Kg</i>.</p>
+    <ul>
+      <li>Đếm thấy đủ → bấm <span class="ok">✓ Đúng</span>. Dòng tự ẩn đi.</li>
+      <li>Thấy lệch → bấm <span class="bad">✕ Sai</span> → nhập <b>số lượng thực tế</b> theo đơn vị tính → chọn <b>lý do</b> (Hao hụt, Hư hỏng…) → ghi chú nếu cần → bấm <span class="k">Xong</span>.</li>
+      <li>Đếm nhiều chỗ: bấm nút <span class="k">+</span> giữa các số, vd. <code>5 + 4 + 3</code>, app tự cộng ra <b>12</b>.</li>
+      <li>App tự báo <span class="bad">Thiếu</span> / <span style="color:var(--over);font-weight:700">Thừa</span> bao nhiêu và quy đổi ra Kg / Quả.</li>
+      <li>Hàng thực tế có mà danh sách không có → bấm <span class="k">+ Thêm mã</span>.</li>
+      <li>Muốn xem lại mã đã kiểm → bấm bộ lọc <b>Tất cả</b> hoặc Thiếu / Thừa / Khớp ở trên cùng. Bấm <b>Sửa</b> để sửa.</li>
+      <li>Kiểm xong → <span class="k">Kết thúc kiểm</span> → <span class="k">Kết thúc phiên kiểm</span>.</li>
+    </ul>
+    <div class="tip">Mã có tồn sổ sách bằng 0 không hiện trong danh sách kiểm (vẫn có trong biên bản). Số đã nhập được lưu ngay, tắt app hay mất mạng không mất.</div>
+  </section>
+
+  <section id="tai-san">
+    <h2><span class="n">5</span>Kiểm tài sản</h2>
+    <ul>
+      <li>Thấy tài sản → <span class="ok">✓ OK</span>.</li>
+      <li>Không thấy / hỏng / đã điều chuyển → <span class="bad">✕ Sai</span> → nhập số lượng thực tế, chọn lý do, ghi chú.</li>
+      <li>Xong → <span class="k">Kết thúc kiểm</span> → <span class="k">Kết thúc phiên kiểm</span>.</li>
+    </ul>
+  </section>
+
+  <section id="bien-ban">
+    <h2><span class="n">6</span>Biên bản kiểm tra & tạo PDF</h2>
+    <ol>
+      <li><b>Kiểm tra cửa hàng:</b> chọn <span class="ok">Đạt</span> / <span class="bad">Không đạt</span> cho đủ 10 tiêu chí, ghi chú nếu cần.</li>
+      <li><b>Tiền mặt:</b> nhập Doanh thu, Tiền đã chuyển khoản / nộp, số tờ từng mệnh giá. App tự cộng và so với doanh thu.</li>
+      <li><b>Các vấn đề khác:</b> ghi các vấn đề. Đặt chữ trong hai dấu sao để in đậm: <code>*Tủ đông số 2*: kêu to</code> → <b>Tủ đông số 2</b>: kêu to.</li>
+      <li><b>Hình ảnh kiểm tra:</b> chụp hoặc chọn ảnh, ghi lý do dưới mỗi ảnh.</li>
+      <li><b>Ký xác nhận:</b> nhập tên quản lý cửa hàng → quản lý ký → người kiểm ký (ký bằng ngón tay trong khung).</li>
+      <li>Bấm <span class="k">Xác nhận & tạo PDF</span>. App tạo 2 file:
+        <ul>
+          <li><b>Biên Bản Kiểm Tra (Có đính kèm hình ảnh)</b>: bản trình bày đầy đủ, có ảnh.</li>
+          <li><b>Biên Bản Kiểm Tra</b>: 3 biên bản để in (cửa hàng, tài sản A4 dọc; tồn kho A4 ngang).</li>
+        </ul>
+      </li>
+      <li>Bấm <span class="k">Gửi cả 2 PDF</span> → chọn Zalo / Teams / Outlook.</li>
+    </ol>
+    <div class="tip"><b>Giờ trên biên bản:</b> bắt đầu = giờ chụp ảnh check-in, kết thúc = lúc bấm tạo PDF. Sửa gì sau đó thì bấm <b>Tạo lại PDF</b>, giờ kết thúc cập nhật theo.</div>
+  </section>
+
+  <section id="ket-thuc">
+    <h2><span class="n">7</span>Kết thúc, sang cửa hàng khác</h2>
+    <p>Ở màn hình chính bấm <span class="k">Kết thúc chuyến kiểm · sang cửa hàng khác</span>.</p>
+    <div class="warn">Bước này <b>xoá</b> toàn bộ số đã kiểm, ảnh và biên bản của cửa hàng vừa kiểm khỏi máy. Chỉ bấm sau khi đã gửi xong 2 file PDF.</div>
+  </section>
+
+  <section id="loi">
+    <h2><span class="n">8</span>Lỗi thường gặp</h2>
+    <table>
+      <tr><th>Gặp</th><th>Cách xử lý</th></tr>
+      <tr><td>iPhone không thấy OneDrive khi chọn file</td><td>Mở app <b>Tệp</b> → Duyệt → <b>⋯</b> → Sửa → bật <b>OneDrive</b>. Nếu công ty chặn: trong app OneDrive chọn file → Gửi bản sao → Lưu vào Tệp → Trên iPhone, rồi chọn từ đó.</td></tr>
+      <tr><td>Báo "không cùng cửa hàng"</td><td>File STOCK, DVT phải xuất cho đúng cửa hàng đang kiểm. Chọn lại file hoặc cửa hàng.</td></tr>
+      <tr><td>Nút Bắt đầu kiểm / Tạo PDF bị mờ</td><td>Đọc dòng chữ vàng phía trên nút: app ghi rõ còn thiếu gì (file, ảnh check-in, tiêu chí, chữ ký…).</td></tr>
+      <tr><td>Bấm Gửi không mở Zalo</td><td>Bấm <b>Tải cả 2 PDF</b>, rồi gửi file từ Zalo như gửi file bình thường.</td></tr>
+      <tr><td>App chưa lên bản mới</td><td>Mở app khi có mạng, tắt hẳn rồi mở lại. Xem số phiên bản ở cuối màn hình chính.</td></tr>
+    </table>
+  </section>
+
+  <p class="g-foot">Kiểm kê Freshshop · dữ liệu kiểm chỉ lưu trên điện thoại của bạn</p>
+</main>
+</body>
+</html>

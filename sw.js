@@ -1,8 +1,8 @@
 /* Service worker: cache toàn bộ app để chạy offline + nhận file chia sẻ (Android Web Share Target). */
-const VERSION = 'kk-v1.10.0';
+const VERSION = 'kk-v1.10.1';
 const MASTER_URL = './data/MASTERR.xlsx';
 const ASSETS = [
-  './', './index.html', './styles.css', './app.js', './parsers.js', './db.js', MASTER_URL,
+  './', './index.html', './huong-dan.html', './styles.css', './app.js', './parsers.js', './db.js', MASTER_URL,
   './report.js', './vendor/xlsx.full.min.js', './vendor/jspdf.umd.min.js', './vendor/jspdf.plugin.autotable.min.js', './manifest.webmanifest',
   './fonts/Tinos-Regular.ttf', './fonts/Tinos-Bold.ttf', './fonts/Tinos-Italic.ttf',
   './fonts/Montserrat-Regular.ttf', './fonts/Montserrat-SemiBold.ttf',
@@ -52,7 +52,9 @@ self.addEventListener('fetch', e => {
 
   // Trang: ưu tiên cache để mở được khi mất mạng
   if (e.request.mode === 'navigate') {
-    e.respondWith(caches.match('./index.html').then(r => r || fetch(e.request)));
+    // Trang riêng (vd. huong-dan.html) lấy đúng trang; còn lại trả về app
+    e.respondWith(caches.match(e.request, { ignoreSearch: true })
+      .then(r => r || caches.match('./index.html')).then(r => r || fetch(e.request)));
     return;
   }
   e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(r => r || fetch(e.request)));

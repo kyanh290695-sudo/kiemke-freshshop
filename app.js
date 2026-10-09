@@ -3,7 +3,7 @@
           → Kiểm hàng tồn kho / Kiểm tài sản / Biên bản kiểm tra (PDF). */
 (function () {
   'use strict';
-  const APP_VERSION = '1.10.0';
+  const APP_VERSION = '1.10.1';
   const MASTER_URL = 'data/MASTERR.xlsx';
 
   const REASONS = {
@@ -167,6 +167,7 @@
           (store ? 'Chụp trước cửa hàng. App in giờ chụp, tên cửa hàng và toạ độ (nếu cho phép) lên ảnh.' : 'Chọn cửa hàng trước để app in đúng tên lên ảnh.') + '</span>') +
       (missing.length ? '<p class="hint" style="margin:0;color:var(--warn)">Cần ' + missing.join(', ') + '.</p>' : '') +
       '<button class="btn pri block" id="startVisit"' + (missing.length || blocking ? ' disabled' : '') + '>Bắt đầu kiểm</button>' +
+'<a class="guide-link" href="huong-dan.html">📖 Hướng dẫn sử dụng</a>' +
       '<div class="hint" style="text-align:center">Phiên bản ' + APP_VERSION + ' · ' + master.stores.length + ' cửa hàng</div></div>';
   }
 
@@ -195,6 +196,7 @@
       '<div class="foot-info"><span>ĐVT tồn kho: ' + dvtInfo() + '</span><button class="btn sm" data-pick="dvt">' + (visit.dvt ? 'Đổi' : 'Chọn file') + '</button></div>' +
       '<button class="btn" id="endVisit">Kết thúc chuyến kiểm · sang cửa hàng khác</button>' +
       '<p class="hint" style="margin:0">Mỗi lần bấm hoặc nhập số, app lưu ngay trên điện thoại. Tắt app hoặc mất mạng không làm mất số đã kiểm.</p>' +
+'<a class="guide-link" href="huong-dan.html">📖 Hướng dẫn sử dụng</a>' +
       '<div class="hint" style="text-align:center">Phiên bản ' + APP_VERSION + '</div></div>';
   }
 

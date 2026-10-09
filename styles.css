@@ -199,3 +199,5 @@ button{cursor:pointer}
 
 .bold-prev:empty{display:none}
 .bold-prev{font-size:14px;background:var(--sunk);border:1px dashed var(--line);border-radius:10px;padding:8px 10px;overflow-wrap:anywhere}
+
+.guide-link{justify-self:center;font-weight:600;color:var(--accent);text-decoration:none;padding:8px 14px;border:1px solid var(--line);border-radius:99px;background:var(--sunk)}
